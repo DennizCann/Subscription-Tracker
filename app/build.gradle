@@ -15,13 +15,13 @@ if (localPropertiesFile.exists()) {
 def groqApiKey = localProperties.getProperty('groq.api.key', '')
 
 android {
-    namespace 'com.example.substracktion'
+    namespace 'com.denizcan.substracktion'
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId "com.example.substracktion"
+        applicationId "com.denizcan.substracktion"
         minSdk 24
         targetSdk 36
         versionCode 1
