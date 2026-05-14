@@ -70,6 +70,7 @@ fun PlanSuggestionScreen(
     onPlanChosen: (SuggestedPlan) -> Unit,
     modifier: Modifier = Modifier,
     editingSubscription: Subscription? = null,
+    skipGroqLoad: Boolean = false,
     viewModel: PlanSuggestionViewModel = viewModel(factory = PlanSuggestionViewModel.Factory)
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -119,14 +120,18 @@ fun PlanSuggestionScreen(
         }
     }
 
-    LaunchedEffect(service?.id, country.code, editKey) {
+    LaunchedEffect(service?.id, country.code, editKey, skipGroqLoad) {
         if (service != null) {
             if (editingSubscription == null) {
                 manualPlanName = ""
                 manualPriceText = ""
                 manualBillingPeriod = BillingPeriod.MONTHLY
             }
-            viewModel.load(service, country)
+            if (skipGroqLoad) {
+                viewModel.showManualOnly()
+            } else {
+                viewModel.load(service, country)
+            }
         }
     }
 
@@ -163,6 +168,7 @@ fun PlanSuggestionScreen(
                         Text(
                             text = when {
                                 editingSubscription != null -> "Duzenle: ${service?.name ?: "Plan"}"
+                                skipGroqLoad -> "Ozel: ${service?.name ?: "Plan"}"
                                 else -> service?.name ?: "Plan"
                             },
                             style = MaterialTheme.typography.titleLarge
@@ -227,6 +233,8 @@ fun PlanSuggestionScreen(
                                         "Degisiklikleri kaydet"
                                     showAiList ->
                                         "Secili AI planini listeye ekle"
+                                    skipGroqLoad ->
+                                        "Ozel uyeligi listeye ekle"
                                     else ->
                                         "Plani listeye ekle"
                                 }
@@ -249,10 +257,21 @@ fun PlanSuggestionScreen(
                     modifier = Modifier.padding(16.dp)
                 )
             } else {
-                TrustWarningBanner(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                if (!skipGroqLoad) {
+                    TrustWarningBanner(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                }
 
                 when (val state = uiState) {
-                    PlanSuggestionUiState.Idle -> Unit
+                    PlanSuggestionUiState.Idle -> {
+                        if (skipGroqLoad) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    }
                     PlanSuggestionUiState.Loading -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -370,7 +389,11 @@ fun PlanSuggestionScreen(
                             ) {
                                 if (state.plans.isEmpty()) {
                                     Text(
-                                        text = "AI plan listesi bos veya okunamadi; asagidan manuel girebilirsiniz.",
+                                        text = if (skipGroqLoad) {
+                                            "Ozel servis: plan adini, odeme donemini ve tutari asagidan girin."
+                                        } else {
+                                            "AI plan listesi bos veya okunamadi; asagidan manuel girebilirsiniz."
+                                        },
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.padding(bottom = 8.dp)

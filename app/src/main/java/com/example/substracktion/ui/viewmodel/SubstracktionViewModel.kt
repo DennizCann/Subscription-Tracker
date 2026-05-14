@@ -8,10 +8,12 @@ import com.example.substracktion.data.local.toDomain
 import com.example.substracktion.data.local.toEntity
 import com.example.substracktion.data.local.toNewEntity
 import com.example.substracktion.domain.model.Subscription
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SubstracktionViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -21,19 +23,25 @@ class SubstracktionViewModel(application: Application) : AndroidViewModel(applic
         .map { list -> list.map { it.toDomain() } }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
+            started = SharingStarted.Eagerly,
             initialValue = emptyList()
         )
 
-    fun addSubscription(subscription: Subscription) {
+    fun addSubscription(subscription: Subscription, onInserted: (() -> Unit)? = null) {
         viewModelScope.launch {
             dao.insert(subscription.toNewEntity())
+            onInserted?.let { done ->
+                withContext(Dispatchers.Main.immediate) { done() }
+            }
         }
     }
 
-    fun updateSubscription(subscription: Subscription) {
+    fun updateSubscription(subscription: Subscription, onUpdated: (() -> Unit)? = null) {
         viewModelScope.launch {
             dao.update(subscription.toEntity())
+            onUpdated?.let { done ->
+                withContext(Dispatchers.Main.immediate) { done() }
+            }
         }
     }
 

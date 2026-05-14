@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.PlaylistAdd
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -42,6 +43,7 @@ import com.example.substracktion.ui.theme.SubstracktionTheme
 fun AddSubscriptionScreen(
     onBack: () -> Unit,
     onServiceSelected: (PopularService) -> Unit,
+    onAddCustomSubscription: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedCategory by remember { mutableStateOf<SubscriptionCategory?>(null) }
@@ -71,6 +73,14 @@ fun AddSubscriptionScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Geri"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onAddCustomSubscription) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.PlaylistAdd,
+                            contentDescription = "Listede olmayan servis ekle"
                         )
                     }
                 }
@@ -165,6 +175,10 @@ private fun PopularServiceRow(
 @Composable
 private fun AddSubscriptionScreenPreview() {
     SubstracktionTheme {
-        AddSubscriptionScreen(onBack = {}, onServiceSelected = {})
+        AddSubscriptionScreen(
+            onBack = {},
+            onServiceSelected = {},
+            onAddCustomSubscription = {}
+        )
     }
 }

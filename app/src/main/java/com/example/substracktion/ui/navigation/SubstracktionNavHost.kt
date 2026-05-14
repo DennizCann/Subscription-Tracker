@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,6 +26,7 @@ import com.example.substracktion.domain.catalog.CountryCatalog
 import com.example.substracktion.domain.catalog.PopularServiceCatalog
 import com.example.substracktion.domain.model.Subscription
 import com.example.substracktion.ui.screens.AddSubscriptionScreen
+import com.example.substracktion.ui.screens.CustomSubscriptionFlowScreen
 import com.example.substracktion.ui.screens.PlanSuggestionScreen
 import com.example.substracktion.ui.screens.SubscriptionListScreen
 import com.example.substracktion.ui.viewmodel.SubstracktionViewModel
@@ -34,10 +36,24 @@ object SubstracktionRoutes {
     const val AddSubscription = "add_subscription"
     const val PlanSuggestion = "plan_suggestion/{serviceId}"
     const val EditPlan = "edit_plan/{subscriptionId}"
+    /** Ozel uyelik: tek rota, ic state (NavHost ile paylasilan taslak yok). */
+    const val CustomSubscription = "custom_subscription"
 
     fun planSuggestion(serviceId: String): String = "plan_suggestion/$serviceId"
 
     fun editPlan(subscriptionId: Long): String = "edit_plan/$subscriptionId"
+}
+
+/**
+ * Baslangic (liste) hedefi yigitta kalir; sadece ustteki ekranlar kapatilir.
+ */
+private fun NavController.popUntilSubscriptionList() {
+    val startId = graph.startDestinationId
+    repeat(24) {
+        val entry = currentBackStackEntry ?: return
+        if (entry.destination.id == startId) return
+        if (!popBackStack()) return
+    }
 }
 
 @Composable
@@ -52,7 +68,8 @@ fun SubstracktionNavHost() {
 
     NavHost(
         navController = navController,
-        startDestination = SubstracktionRoutes.SubscriptionList
+        startDestination = SubstracktionRoutes.SubscriptionList,
+        modifier = Modifier.fillMaxSize()
     ) {
         composable(SubstracktionRoutes.SubscriptionList) {
             SubscriptionListScreen(
@@ -73,7 +90,22 @@ fun SubstracktionNavHost() {
                 onBack = { navController.popBackStack() },
                 onServiceSelected = { service ->
                     navController.navigate(SubstracktionRoutes.planSuggestion(service.id))
+                },
+                onAddCustomSubscription = {
+                    navController.navigate(SubstracktionRoutes.CustomSubscription)
                 }
+            )
+        }
+        composable(SubstracktionRoutes.CustomSubscription) {
+            CustomSubscriptionFlowScreen(
+                country = selectedCountry,
+                onExitFlow = { navController.popBackStack() },
+                onFinished = { newSubscription ->
+                    appViewModel.addSubscription(newSubscription) {
+                        navController.popUntilSubscriptionList()
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
             )
         }
         composable(
@@ -100,12 +132,9 @@ fun SubstracktionNavHost() {
                             category = svc.category,
                             billingPeriod = plan.period
                         )
-                        appViewModel.addSubscription(newSubscription)
-                        navController.popBackStack(
-                            route = SubstracktionRoutes.SubscriptionList,
-                            inclusive = false,
-                            saveState = false
-                        )
+                        appViewModel.addSubscription(newSubscription) {
+                            navController.popUntilSubscriptionList()
+                        }
                     }
                 }
             )
@@ -159,12 +188,9 @@ fun SubstracktionNavHost() {
                             currencyCode = plan.currencyCode.ifBlank { country.defaultCurrencyCode },
                             billingPeriod = plan.period
                         )
-                        appViewModel.updateSubscription(updated)
-                        navController.popBackStack(
-                            route = SubstracktionRoutes.SubscriptionList,
-                            inclusive = false,
-                            saveState = false
-                        )
+                        appViewModel.updateSubscription(updated) {
+                            navController.popUntilSubscriptionList()
+                        }
                     }
                 )
             }

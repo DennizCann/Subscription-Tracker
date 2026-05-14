@@ -54,6 +54,14 @@ class PlanSuggestionViewModel(
         load(service, country)
     }
 
+    /** Groq cagrilmadan sadece manuel plan formu (ozel servis akisi). */
+    fun showManualOnly() {
+        _uiState.value = PlanSuggestionUiState.Success(
+            plans = emptyList(),
+            disclaimer = null
+        )
+    }
+
     companion object {
         val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
